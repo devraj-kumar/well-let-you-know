@@ -14,11 +14,15 @@ from pathlib import Path
 
 DEFAULT_MODEL = "mlx-community/whisper-large-v3-turbo"
 
-# Nudges Whisper toward technical-interview vocabulary.
+# Nudges Whisper toward technical-interview vocabulary. Includes a code-switched
+# Hinglish sentence so mixed Hindi-English speech is transcribed naturally instead
+# of being forced into one language.
 INITIAL_PROMPT = (
-    "Technical software engineering interview. Vocabulary may include: Big-O, "
-    "O(n log n), hash map, binary tree, SQL, REST API, Kubernetes, Docker, React, "
-    "microservices, load balancer, TCP, DNS, CI/CD, unit tests, refactoring."
+    "Technical software engineering interview. The conversation may be in English, "
+    "Hindi, or Hinglish (code-switched Hindi and English). "
+    "Interview mein Big-O, O(n log n), hash map, binary tree, SQL, REST API, "
+    "Kubernetes, Docker, React, microservices, load balancer, TCP, DNS, CI/CD, "
+    "unit tests, refactoring jaise technical terms aa sakte hain."
 )
 
 
@@ -29,11 +33,16 @@ def whisper_model() -> str:
 def transcribe_channel(wav_path: Path) -> list[dict]:
     import mlx_whisper  # heavy import; keep it lazy
 
+    # COACH_LANGUAGE: unset/auto = per-channel auto-detect (right default for
+    # Hinglish and mixed panels); or a Whisper code like "hi" / "en" to force one.
+    language = os.environ.get("COACH_LANGUAGE", "auto").lower()
+    kwargs = {} if language in ("", "auto") else {"language": language}
     result = mlx_whisper.transcribe(
         str(wav_path),
         path_or_hf_repo=whisper_model(),
         initial_prompt=INITIAL_PROMPT,
         condition_on_previous_text=False,
+        **kwargs,
     )
     segments = []
     for segment in result.get("segments", []):

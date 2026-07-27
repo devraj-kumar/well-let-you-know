@@ -96,6 +96,14 @@ SCHEMA = {
 
 def build_prompt(transcript_text: str) -> str:
     rubric = RUBRIC_PATH.read_text()
+    # COACH_REPORT_LANGUAGE: auto (default) follows the candidate's language;
+    # or force e.g. "English" / "Hindi" / "Hinglish" for the narrative fields.
+    report_language = os.environ.get("COACH_REPORT_LANGUAGE", "auto")
+    if report_language.lower() not in ("", "auto"):
+        rubric += (
+            f"\n- Override: write all narrative fields in {report_language}, "
+            "regardless of what the candidate spoke. Quotes still stay verbatim."
+        )
     return f"{rubric}\n\n---\n\nTRANSCRIPT:\n\n{transcript_text}\n"
 
 

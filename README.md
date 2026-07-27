@@ -66,12 +66,23 @@ macOS will prompt twice, for your **terminal app**:
 Grant both, then re-run `./coach record`. Do a 30-second test before a real
 interview: `./coach record --duration 30 --no-open` while playing any video.
 
+### Languages: English, Hindi, Hinglish
+
+The pipeline handles English, Hindi, and code-switched Hinglish out of the box —
+language is auto-detected per speaker channel, and Whisper may write Hindi speech
+in Devanagari or romanized form (both are fine). The gap report is written in the
+language the candidate mostly spoke: English for English interviews, easy Hinglish
+for Hindi/Hinglish ones — with technical terms kept in English and all quotes
+verbatim.
+
 ### Configuration (env vars)
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `COACH_WHISPER_MODEL` | `mlx-community/whisper-large-v3-turbo` | Any mlx-community Whisper repo (use `whisper-tiny` for quick tests) |
 | `COACH_CLAUDE_MODEL` | Claude Code's default / `claude-opus-4-8` (SDK) | Model for the analysis step |
+| `COACH_LANGUAGE` | `auto` | Force the spoken language for transcription (`hi`, `en`, …) if auto-detect misfires |
+| `COACH_REPORT_LANGUAGE` | `auto` (follow the candidate) | Force the report narrative language, e.g. `English` to share a Hindi interview's report with an English-speaking mentor |
 
 ## ⚠️ Consent and legality
 

@@ -9,6 +9,13 @@ channels, so speaker labels are reliable:
 Timestamps are [HH:MM:SS]. Transcription is automatic, so tolerate small word errors
 and infer the intended technical terms.
 
+The conversation may be in English, Hindi, or Hinglish (code-switched Hindi-English),
+and the transcript may mix Latin and Devanagari script — sometimes mid-sentence.
+Treat all of these as equally valid: judge the *technical content* of an answer, never
+the language it was given in. The transcriber sometimes writes Hindi speech in
+Devanagari and sometimes romanized; read both. Keep every quote verbatim in its
+original language and script.
+
 Your job is to produce an honest, specific, evidence-backed gap analysis. The
 candidate may be re-entering interviews after a layoff — be direct but constructive.
 Never invent quotes: every quote you output must appear (possibly lightly cleaned up)
@@ -90,3 +97,8 @@ Rules:
 - Order "questions" chronologically and "weak_concepts" by impact, most costly first.
 - If the transcript is too short or garbled to analyze a section, say so in the
   relevant summary fields rather than inventing content.
+- Report language: write all narrative fields (summaries, commentary, sketches,
+  study pointers, improvements) in the language the candidate mostly spoke — plain
+  English for an English interview; simple, natural Hinglish in Latin script for a
+  Hindi or Hinglish interview. Keep technical terms in English either way. Quotes
+  always stay verbatim.
