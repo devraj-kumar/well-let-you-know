@@ -55,7 +55,7 @@ ask before installing anything. Just answer the questions.
 **Step 3 — Allow the two permissions.** At the end, setup runs a 6-second test
 recording. macOS will show two popups — click **Allow** on both:
 
-1. **Microphone** (records your voice)
+1. **Microphone** (records your voice )
 2. **System Audio Recording** (records the interviewer's voice from Zoom/Meet/Teams)
 
 Missed a popup or clicked Don't Allow? Open **System Settings → Privacy &
