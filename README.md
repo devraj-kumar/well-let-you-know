@@ -48,8 +48,16 @@ git clone <this-repo> && cd interview-coach
 ./coach record          # start before the interview; Ctrl-C when it ends
 ```
 
-After you stop, it transcribes (first run downloads the Whisper model, ~1.5 GB),
+After you stop, it transcribes (first run downloads the Whisper model, ~3 GB),
 runs the Claude analysis, and opens `report.html`.
+
+**The pipeline is tuned for accuracy, not speed.** It uses the full Whisper
+large-v3 model and a two-pass Claude analysis (deep analysis on Opus, then a
+verification pass that audits every quote, verdict, and question against the
+transcript). Expect the report ~5–15 minutes after a one-hour interview — by
+design: the report drives real preparation decisions, so precision wins.
+Talk ratio and response-latency numbers are measured from the audio timings,
+not estimated by the model.
 
 ```bash
 ./coach process <session> [--force]   # re-run the pipeline on a past session
@@ -79,8 +87,8 @@ verbatim.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `COACH_WHISPER_MODEL` | `mlx-community/whisper-large-v3-turbo` | Any mlx-community Whisper repo (use `whisper-tiny` for quick tests) |
-| `COACH_CLAUDE_MODEL` | Claude Code's default / `claude-opus-4-8` (SDK) | Model for the analysis step |
+| `COACH_WHISPER_MODEL` | `mlx-community/whisper-large-v3-mlx` | Any mlx-community Whisper repo (`whisper-large-v3-turbo` if you want speed, `whisper-tiny` for quick tests) |
+| `COACH_CLAUDE_MODEL` | `claude-opus-4-8` | Model for both analysis passes |
 | `COACH_LANGUAGE` | `auto` | Force the spoken language for transcription (`hi`, `en`, …) if auto-detect misfires |
 | `COACH_REPORT_LANGUAGE` | `auto` (follow the candidate) | Force the report narrative language, e.g. `English` to share a Hindi interview's report with an English-speaking mentor |
 

@@ -18,8 +18,10 @@ from jsonschema import validate, ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUBRIC_PATH = REPO_ROOT / "prompts" / "analysis.md"
+VERIFY_PATH = REPO_ROOT / "prompts" / "verify.md"
 
-SDK_DEFAULT_MODEL = "claude-opus-4-8"
+# Quality-first: pin the analysis to the most capable Opus tier on both paths.
+DEFAULT_MODEL = "claude-opus-4-8"
 
 SCHEMA = {
     "type": "object",
@@ -94,7 +96,47 @@ SCHEMA = {
 }
 
 
-def build_prompt(transcript_text: str) -> str:
+def measured_stats(session_dir: Path) -> str:
+    """Deterministic stats from channel timings, so the model never estimates them."""
+    segments = json.loads((session_dir / "transcript.json").read_text())["segments"]
+    talk = {"CANDIDATE": 0.0, "INTERVIEWER": 0.0}
+    for segment in segments:
+        talk[segment["speaker"]] += segment["end"] - segment["start"]
+    total = talk["CANDIDATE"] + talk["INTERVIEWER"] or 1.0
+    ratio = talk["CANDIDATE"] / total
+
+    ordered = sorted(segments, key=lambda s: s["start"])
+    gaps = []
+    longest_monologue = 0.0
+    run = 0.0
+    for previous, current in zip(ordered, ordered[1:]):
+        if previous["speaker"] == "INTERVIEWER" and current["speaker"] == "CANDIDATE":
+            gap = current["start"] - previous["end"]
+            if 0 <= gap <= 30:
+                gaps.append(gap)
+        if current["speaker"] == "CANDIDATE" == previous["speaker"]:
+            run += current["end"] - previous["start"]
+            longest_monologue = max(longest_monologue, run)
+        else:
+            run = 0.0
+
+    lines = [
+        "MEASURED AUDIO STATS (computed from the audio channels — use these exact "
+        "numbers; do not estimate your own):",
+        f"- candidate speaking time: {talk['CANDIDATE']:.0f}s; interviewer: {talk['INTERVIEWER']:.0f}s",
+        f"- talk_ratio_candidate = {ratio:.2f}  (use this exact value in communication.talk_ratio_candidate)",
+    ]
+    if gaps:
+        lines.append(
+            f"- pause before candidate responds after interviewer stops: "
+            f"avg {sum(gaps) / len(gaps):.1f}s, max {max(gaps):.1f}s"
+        )
+    if longest_monologue:
+        lines.append(f"- longest uninterrupted candidate stretch: {longest_monologue:.0f}s")
+    return "\n".join(lines)
+
+
+def build_prompt(transcript_text: str, stats: str = "") -> str:
     rubric = RUBRIC_PATH.read_text()
     # COACH_REPORT_LANGUAGE: auto (default) follows the candidate's language;
     # or force e.g. "English" / "Hindi" / "Hinglish" for the narrative fields.
@@ -104,7 +146,8 @@ def build_prompt(transcript_text: str) -> str:
             f"\n- Override: write all narrative fields in {report_language}, "
             "regardless of what the candidate spoke. Quotes still stay verbatim."
         )
-    return f"{rubric}\n\n---\n\nTRANSCRIPT:\n\n{transcript_text}\n"
+    stats_block = f"\n\n---\n\n{stats}" if stats else ""
+    return f"{rubric}{stats_block}\n\n---\n\nTRANSCRIPT:\n\n{transcript_text}\n"
 
 
 def extract_json(text: str) -> dict:
@@ -118,9 +161,7 @@ def extract_json(text: str) -> dict:
 
 def run_claude_cli(prompt: str) -> str:
     command = ["claude", "-p", "--output-format", "json"]
-    model = os.environ.get("COACH_CLAUDE_MODEL")
-    if model:
-        command += ["--model", model]
+    command += ["--model", os.environ.get("COACH_CLAUDE_MODEL", DEFAULT_MODEL)]
     result = subprocess.run(
         command, input=prompt, capture_output=True, text=True, timeout=900
     )
@@ -135,9 +176,11 @@ def run_anthropic_sdk(prompt: str) -> str:
     import anthropic
 
     client = anthropic.Anthropic()
-    model = os.environ.get("COACH_CLAUDE_MODEL", SDK_DEFAULT_MODEL)
+    model = os.environ.get("COACH_CLAUDE_MODEL", DEFAULT_MODEL)
     with client.messages.stream(
-        model=model, max_tokens=32000,
+        model=model, max_tokens=64000,
+        thinking={"type": "adaptive"},
+        output_config={"effort": "high"},
         messages=[{"role": "user", "content": prompt}],
     ) as stream:
         message = stream.get_final_message()
@@ -162,19 +205,14 @@ def run_model(prompt: str) -> str:
     )
 
 
-def analyze_session(session_dir: Path) -> Path:
-    transcript = (session_dir / "transcript.txt").read_text()
-    if len(transcript.strip()) < 50:
-        raise RuntimeError("transcript is empty or too short to analyze")
-
-    prompt = build_prompt(transcript)
+def run_validated(prompt: str) -> dict:
     output = run_model(prompt)
-
     try:
         data = extract_json(output)
         validate(data, SCHEMA)
+        return data
     except (ValueError, json.JSONDecodeError, ValidationError) as first_error:
-        print(f"  first analysis pass was malformed ({first_error}); retrying once …")
+        print(f"  output was malformed ({str(first_error)[:120]}); retrying once …")
         retry_prompt = (
             prompt
             + "\n\nYour previous output was invalid JSON or did not match the required "
@@ -182,7 +220,39 @@ def analyze_session(session_dir: Path) -> Path:
         )
         data = extract_json(run_model(retry_prompt))
         validate(data, SCHEMA)
+        return data
+
+
+def verify_analysis(transcript: str, stats: str, draft: dict) -> dict:
+    """Second pass: audit quotes, coverage, and verdicts against the transcript."""
+    prompt = (
+        VERIFY_PATH.read_text()
+        + ("\n\n---\n\n" + stats if stats else "")
+        + "\n\n---\n\nTRANSCRIPT:\n\n" + transcript
+        + "\n\n---\n\nDRAFT ANALYSIS JSON:\n\n"
+        + json.dumps(draft, indent=2, ensure_ascii=False)
+    )
+    try:
+        return run_validated(prompt)
+    except (ValueError, json.JSONDecodeError, ValidationError, RuntimeError) as error:
+        print(f"  verification pass failed ({str(error)[:120]}); keeping the draft")
+        return draft
+
+
+def analyze_session(session_dir: Path) -> Path:
+    transcript = (session_dir / "transcript.txt").read_text()
+    if len(transcript.strip()) < 50:
+        raise RuntimeError("transcript is empty or too short to analyze")
+
+    stats = measured_stats(session_dir)
+    print("  pass 1/2: deep analysis …")
+    draft = run_validated(build_prompt(transcript, stats))
+    print("  pass 2/2: verifying quotes, coverage, and verdicts …")
+    data = verify_analysis(transcript, stats, draft)
 
     analysis_path = session_dir / "analysis.json"
     analysis_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    (session_dir / "analysis.draft.json").write_text(
+        json.dumps(draft, indent=2, ensure_ascii=False)
+    )
     return analysis_path

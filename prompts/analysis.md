@@ -94,6 +94,8 @@ Rules:
 - "verdict" must be exactly one of: strong, partial, missed.
 - "hints" and "deflections" may be empty arrays when none occurred for that question.
 - "talk_ratio_candidate" is the fraction (0-1) of speaking time that was the candidate.
+  When a MEASURED AUDIO STATS block is provided, copy its exact value and ground your
+  pacing/latency observations in those measured numbers instead of estimating.
 - Order "questions" chronologically and "weak_concepts" by impact, most costly first.
 - If the transcript is too short or garbled to analyze a section, say so in the
   relevant summary fields rather than inventing content.
