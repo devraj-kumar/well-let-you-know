@@ -140,7 +140,7 @@ def refine_speakers(session_dir: Path, segments: list[dict]) -> list[dict]:
         # Keep clusters that carry real speech; tiny ones are noise/artifacts.
         total_time = _speech_time(segments, list(interviewer_embeddings)) or 1.0
         major = [c for c in clusters
-                 if len(c) >= 4 and _speech_time(segments, c) / total_time >= 0.12]
+                 if len(c) >= 3 and _speech_time(segments, c) / total_time >= 0.12]
         major.sort(key=lambda c: min(segments[i]["start"] for i in c))
         multi = len(major) >= 2
         labels = ([f"INTERVIEWER_{chr(ord('A') + n)}" for n in range(len(major))]
