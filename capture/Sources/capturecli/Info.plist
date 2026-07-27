@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>dev.interviewcoach.capturecli</string>
+	<key>CFBundleName</key>
+	<string>capturecli</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Records your side of the interview so the post-interview gap report can be generated. Audio never leaves this Mac.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Records the interviewer's audio (system output) so the post-interview gap report can be generated. Audio never leaves this Mac.</string>
+</dict>
+</plist>

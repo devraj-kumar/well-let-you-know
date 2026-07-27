@@ -1,0 +1,5 @@
+#!/bin/bash
+# interview-coach entry point. Requires uv (https://docs.astral.sh/uv/).
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec uv run --project "$DIR" python "$DIR/pipeline/coach.py" "$@"
