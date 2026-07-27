@@ -56,7 +56,10 @@ def create_profile_interactive() -> None:
     ]
     profile = {}
     for key, question in questions:
-        answer = input(f"  {question}: ").strip()
+        try:
+            answer = input(f"  {question}: ").strip()
+        except EOFError:
+            break
         if answer:
             profile[key] = answer
     profile["updated_at"] = datetime.now().isoformat(timespec="seconds")
@@ -81,8 +84,13 @@ def cmd_record(args: argparse.Namespace) -> None:
         die("capture binary not built — run ./setup.sh first")
 
     if not PROFILE_PATH.exists() and sys.stdin.isatty():
-        if input("No profile yet — set one up for experience-calibrated feedback? [Y/n] ")\
-                .strip().lower() not in ("n", "no"):
+        try:
+            wants_profile = input(
+                "No profile yet — set one up for experience-calibrated feedback? [Y/n] "
+            ).strip().lower() not in ("n", "no")
+        except EOFError:
+            wants_profile = False
+        if wants_profile:
             create_profile_interactive()
 
     print(CONSENT_NOTICE)
