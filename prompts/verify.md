@@ -24,6 +24,12 @@ Audit the draft against the transcript and produce a corrected final version:
    numbers must use those exact values.
 7. **Language** — keep the draft's report language (English / Hinglish) and keep
    all quotes verbatim in their original language and script.
+8. **Persona & competencies** — if a CANDIDATE PROFILE is provided, verdicts,
+   competency ratings, and expectations must be calibrated to that experience level
+   and target role. Check each competency's evidence exists in the transcript;
+   change ratings to "not_observed" when the interview never actually probed that
+   area. Verify "speaker_names" / "asked_by" against actual introductions — remove
+   any guessed name.
 
 Do not water the report down: the goal is precision, not politeness. Keep every
 finding that survives the audit.

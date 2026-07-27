@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+PROFILE_PATH = Path(__file__).resolve().parent.parent / "profile" / "profile.json"
+
 CSS = """
 :root { --bg:#fbfaf7; --card:#ffffff; --ink:#1e2430; --muted:#6b7280; --line:#e5e1d8;
         --strong:#15803d; --partial:#b45309; --missed:#b91c1c; --accent:#1d4ed8; }
@@ -28,6 +30,8 @@ h2 { font-size:1.15rem; margin:2.2rem 0 .8rem; border-bottom:1px solid var(--lin
          border:1.5px solid currentColor; }
 .badge.strong { color:var(--strong); } .badge.partial { color:var(--partial); }
 .badge.missed { color:var(--missed); }
+.badge.adequate { color:var(--partial); } .badge.concern { color:var(--missed); }
+.badge.not_observed { color:var(--muted); }
 .qhead { display:flex; gap:.75rem; align-items:baseline; flex-wrap:wrap; }
 .qhead .t { color:var(--muted); font-size:.85rem; }
 .qtitle { font-weight:650; }
@@ -53,14 +57,17 @@ def esc(value) -> str:
     return html.escape(str(value)) if value is not None else ""
 
 
-def render_question(index: int, question: dict) -> str:
+def render_question(index: int, question: dict, speaker_names: dict) -> str:
     verdict = question.get("verdict", "partial")
+    asked_by = question.get("asked_by", "")
+    asked_by = speaker_names.get(asked_by, asked_by)
+    meta = " · ".join(x for x in (question.get("asked_at", ""), asked_by) if x)
     parts = [
         '<div class="card">',
         '<div class="qhead">',
         f'<span class="badge {esc(verdict)}">{esc(verdict)}</span>',
         f'<span class="qtitle">Q{index}. {esc(question.get("question"))}</span>',
-        f'<span class="t">{esc(question.get("asked_at", ""))}</span>',
+        f'<span class="t">{esc(meta)}</span>',
         "</div>",
         f'<div class="intent">Probing: {esc(question.get("intent"))}</div>',
         f"<div>{esc(question.get('answer_summary'))}</div>",
@@ -97,8 +104,16 @@ def render_report(session_dir: Path) -> Path:
 
     body = [f"<style>{CSS}</style>", "<main>"]
     body.append("<h1>Interview gap report</h1>")
+    persona = ""
+    if PROFILE_PATH.exists():
+        profile = json.loads(PROFILE_PATH.read_text())
+        bits = [profile.get("years_experience", "") and f"{profile['years_experience']} yrs experience",
+                profile.get("target_role", "") and f"target: {profile['target_role']}"]
+        bits = [b for b in bits if b]
+        if bits:
+            persona = f" · judged as {', '.join(bits)}"
     body.append(f'<div class="sub">Session {esc(session_dir.name)} · generated '
-                f"{datetime.now().strftime('%Y-%m-%d %H:%M')}</div>")
+                f"{datetime.now().strftime('%Y-%m-%d %H:%M')}{esc(persona)}</div>")
 
     body.append('<div class="stats">')
     body.append(f'<div class="stat"><b>{len(questions)}</b><span>questions</span></div>')
@@ -113,9 +128,24 @@ def render_report(session_dir: Path) -> Path:
     for improvement in analysis.get("top_improvements", []):
         body.append(f'<div class="card improve">{esc(improvement)}</div>')
 
+    competencies = analysis.get("competencies", [])
+    if competencies:
+        body.append("<h2>Competency assessment</h2>")
+        for competency in competencies:
+            rating = competency.get("rating", "adequate")
+            body.append('<div class="card">')
+            body.append('<div class="qhead">'
+                        f'<span class="badge {esc(rating)}">{esc(rating.replace("_", " "))}</span>'
+                        f'<span class="qtitle">{esc(competency.get("area"))}</span></div>')
+            body.append(f"<div>{esc(competency.get('assessment'))}</div>")
+            if competency.get("evidence"):
+                body.append(f"<blockquote>“{esc(competency['evidence'])}”</blockquote>")
+            body.append("</div>")
+
+    speaker_names = analysis.get("speaker_names", {}) or {}
     body.append("<h2>Question by question</h2>")
     for i, question in enumerate(questions, 1):
-        body.append(render_question(i, question))
+        body.append(render_question(i, question, speaker_names))
 
     body.append("<h2>Weak concepts to study</h2>")
     for concept in analysis.get("weak_concepts", []):

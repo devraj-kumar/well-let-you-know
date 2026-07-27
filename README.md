@@ -5,11 +5,19 @@
 interview-coach records your interview on your Mac, transcribes it privately
 on-device, and gives you an honest report afterwards:
 
-- every question asked, and whether your answer was **strong / partial / missed**
+- every question asked, and whether your answer was **strong / partial / missed —
+  judged for YOUR experience level** (an answer that's fine at 2 years is a red
+  flag at 5; the report says so)
 - the **hints the interviewer gave you** — and which ones you didn't pick up
 - the moments you **deflected** instead of answering (with your exact words)
+- **beyond-the-technical competencies** that decide offers: coachability,
+  communication, requirement clarification, ownership stories, trade-off thinking
 - the **concepts that are actually weak**, ranked, with what to study
 - your talk-time ratio, response delays, and the **top 3 things to fix** next time
+
+Panel interview? It tells interviewer voices apart and attributes each question
+(using their introductions for names). Over time it also learns *your* voice, so
+attribution keeps getting better with every session.
 
 It works in **English, Hindi, and Hinglish**. It gives **no help during the
 interview** — this is a mirror, not a cheat tool. Your audio never leaves your Mac.
@@ -55,6 +63,16 @@ Security → Screen & System Audio Recording**, switch **Terminal** ON, and run
 
 That's it. You never need to touch setup again.
 
+## Tell it who you are (once)
+
+```bash
+./coach profile
+```
+
+One minute of questions — your experience, current role, stack, and the role
+you're targeting. Every report is then calibrated to that persona instead of a
+generic bar. `./coach record` offers this automatically the first time.
+
 ## Using it on interview day
 
 **Before the interview starts** (Terminal, inside the `interview-coach` folder):
@@ -97,7 +115,7 @@ deliberately thorough, not fast). The report opens in your browser by itself.
 | Report says the interviewer said nothing / `system.wav` is silent | The System Audio Recording permission is off. System Settings → Privacy & Security → Screen & System Audio Recording → turn ON Terminal → run `./setup.sh` again to re-test. |
 | `claude: command not found` during analysis | Install Claude Code: `curl -fsSL https://claude.ai/install.sh \| bash`, then run `claude` once to log in. Then `./coach process <session>` to finish your report — the recording is safe. |
 | First report is very slow | The first run downloads a 3 GB transcription model. Every run after that skips the download. |
-| Two interviewers on the call | Both appear as one "INTERVIEWER" voice. The analysis still works. |
+| Two interviewers on the call | Detected automatically by voice (INTERVIEWER_A / INTERVIEWER_B) and named from their introductions. If their voices are too similar to separate reliably, they're kept as one INTERVIEWER rather than guessed. |
 | It didn't record my headphones call | It records *system audio*, which includes calls on any headphones. If you use exotic audio routing (external DACs, virtual devices), do a 30-second test first: `./coach record --duration 30 --no-open` |
 
 ---
@@ -120,7 +138,12 @@ system audio ───────► system.wav   (INTERVIEWER) ─┘    speec
                                                       report.html
 ```
 
-- Two separate audio channels = perfect speaker attribution, no ML diarization.
+- Two separate audio channels = perfect candidate/interviewer attribution.
+  On top of that, local speaker embeddings (resemblyzer) split multiple
+  interviewer voices, and a rolling voiceprint of the candidate (stored in
+  `profile/`, never uploaded) catches misattributed speech across sessions.
+- Your `profile/profile.json` persona is injected into both analysis passes so
+  verdicts are calibrated to your seniority and target role.
 - Talk ratio and response-latency numbers are **measured from the audio timings**,
   not estimated by the model.
 - Language is auto-detected per speaker; the report is written in the language you
@@ -134,6 +157,7 @@ system audio ───────► system.wav   (INTERVIEWER) ─┘    speec
 | `COACH_CLAUDE_MODEL` | `claude-opus-4-8` | Model for both analysis passes |
 | `COACH_LANGUAGE` | auto-detect | Force transcription language (`hi`, `en`, …) |
 | `COACH_REPORT_LANGUAGE` | follow the candidate | e.g. `English` to share a Hindi interview's report with an English-speaking mentor |
+| `COACH_VOICE_ID` | `on` | `off` disables voice identification (channel labels only) |
 
 ### Session folder layout
 

@@ -19,15 +19,31 @@ from jsonschema import validate, ValidationError
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUBRIC_PATH = REPO_ROOT / "prompts" / "analysis.md"
 VERIFY_PATH = REPO_ROOT / "prompts" / "verify.md"
+PROFILE_PATH = REPO_ROOT / "profile" / "profile.json"
 
 # Quality-first: pin the analysis to the most capable Opus tier on both paths.
 DEFAULT_MODEL = "claude-opus-4-8"
 
 SCHEMA = {
     "type": "object",
-    "required": ["session_summary", "questions", "weak_concepts", "communication", "top_improvements"],
+    "required": ["session_summary", "questions", "competencies", "weak_concepts",
+                 "communication", "top_improvements"],
     "properties": {
         "session_summary": {"type": "string"},
+        "speaker_names": {"type": "object", "additionalProperties": {"type": "string"}},
+        "competencies": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["area", "rating", "assessment"],
+                "properties": {
+                    "area": {"type": "string"},
+                    "rating": {"enum": ["strong", "adequate", "concern", "not_observed"]},
+                    "assessment": {"type": "string"},
+                    "evidence": {"type": "string"},
+                },
+            },
+        },
         "questions": {
             "type": "array",
             "items": {
@@ -38,6 +54,7 @@ SCHEMA = {
                     "question": {"type": "string"},
                     "intent": {"type": "string"},
                     "asked_at": {"type": "string"},
+                    "asked_by": {"type": "string"},
                     "answer_summary": {"type": "string"},
                     "verdict": {"enum": ["strong", "partial", "missed"]},
                     "hints": {
@@ -101,7 +118,8 @@ def measured_stats(session_dir: Path) -> str:
     segments = json.loads((session_dir / "transcript.json").read_text())["segments"]
     talk = {"CANDIDATE": 0.0, "INTERVIEWER": 0.0}
     for segment in segments:
-        talk[segment["speaker"]] += segment["end"] - segment["start"]
+        side = "CANDIDATE" if segment["speaker"] == "CANDIDATE" else "INTERVIEWER"
+        talk[side] += segment["end"] - segment["start"]
     total = talk["CANDIDATE"] + talk["INTERVIEWER"] or 1.0
     ratio = talk["CANDIDATE"] / total
 
@@ -110,7 +128,7 @@ def measured_stats(session_dir: Path) -> str:
     longest_monologue = 0.0
     run = 0.0
     for previous, current in zip(ordered, ordered[1:]):
-        if previous["speaker"] == "INTERVIEWER" and current["speaker"] == "CANDIDATE":
+        if previous["speaker"] != "CANDIDATE" and current["speaker"] == "CANDIDATE":
             gap = current["start"] - previous["end"]
             if 0 <= gap <= 30:
                 gaps.append(gap)
@@ -136,6 +154,20 @@ def measured_stats(session_dir: Path) -> str:
     return "\n".join(lines)
 
 
+def profile_block() -> str:
+    if not PROFILE_PATH.exists():
+        return ""
+    profile = json.loads(PROFILE_PATH.read_text())
+    profile.pop("updated_at", None)
+    if not profile:
+        return ""
+    lines = [f"- {key.replace('_', ' ')}: {value}" for key, value in profile.items()]
+    return (
+        "CANDIDATE PROFILE (calibrate every judgment to this persona):\n"
+        + "\n".join(lines)
+    )
+
+
 def build_prompt(transcript_text: str, stats: str = "") -> str:
     rubric = RUBRIC_PATH.read_text()
     # COACH_REPORT_LANGUAGE: auto (default) follows the candidate's language;
@@ -146,8 +178,10 @@ def build_prompt(transcript_text: str, stats: str = "") -> str:
             f"\n- Override: write all narrative fields in {report_language}, "
             "regardless of what the candidate spoke. Quotes still stay verbatim."
         )
+    persona = profile_block()
+    persona_block = f"\n\n---\n\n{persona}" if persona else ""
     stats_block = f"\n\n---\n\n{stats}" if stats else ""
-    return f"{rubric}{stats_block}\n\n---\n\nTRANSCRIPT:\n\n{transcript_text}\n"
+    return f"{rubric}{persona_block}{stats_block}\n\n---\n\nTRANSCRIPT:\n\n{transcript_text}\n"
 
 
 def extract_json(text: str) -> dict:
@@ -229,8 +263,10 @@ def run_validated(prompt: str) -> dict:
 
 def verify_analysis(transcript: str, stats: str, draft: dict) -> dict:
     """Second pass: audit quotes, coverage, and verdicts against the transcript."""
+    persona = profile_block()
     prompt = (
         VERIFY_PATH.read_text()
+        + (("\n\n---\n\n" + persona) if persona else "")
         + ("\n\n---\n\n" + stats if stats else "")
         + "\n\n---\n\nTRANSCRIPT:\n\n" + transcript
         + "\n\n---\n\nDRAFT ANALYSIS JSON:\n\n"

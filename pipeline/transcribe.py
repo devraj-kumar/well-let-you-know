@@ -184,6 +184,12 @@ def transcribe_session(session_dir: Path) -> Path:
     merged.sort(key=lambda s: s["start"])
     merged = suppress_crosstalk(merged)
 
+    try:
+        from voices import refine_speakers
+        merged = refine_speakers(session_dir, merged)
+    except Exception as error:  # voice ID is best-effort; channel labels still stand
+        print(f"  note: voice identification skipped ({error})")
+
     transcript_json = session_dir / "transcript.json"
     transcript_json.write_text(json.dumps({"segments": merged}, indent=2, ensure_ascii=False))
 

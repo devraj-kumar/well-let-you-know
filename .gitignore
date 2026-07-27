@@ -1,4 +1,5 @@
 sessions/
+profile/
 capture/.build/
 .venv/
 __pycache__/

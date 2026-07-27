@@ -19,6 +19,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SESSIONS_DIR = REPO_ROOT / "sessions"
 CAPTURE_BIN = REPO_ROOT / "capture" / ".build" / "release" / "capturecli"
+PROFILE_PATH = REPO_ROOT / "profile" / "profile.json"
 
 CONSENT_NOTICE = """\
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -39,9 +40,48 @@ def die(message: str) -> None:
     sys.exit(1)
 
 
+def create_profile_interactive() -> None:
+    print("\nYour profile calibrates the feedback — an answer that's fine at 2 years of")
+    print("experience can be a red flag at 5. Takes one minute; edit any time with")
+    print("'./coach profile'. Press Enter to skip a question.\n")
+    questions = [
+        ("name", "Your name"),
+        ("years_experience", "Total years of professional experience (number)"),
+        ("current_role", "Current / most recent role (e.g. Backend Engineer at a fintech)"),
+        ("expertise", "Main expertise / stack (e.g. Java, Spring, SQL, AWS)"),
+        ("target_role", "Role you're interviewing for (e.g. Senior Backend Engineer)"),
+        ("notes", "Anything else that should shape the feedback (career gap, switch, …)"),
+    ]
+    profile = {}
+    for key, question in questions:
+        answer = input(f"  {question}: ").strip()
+        if answer:
+            profile[key] = answer
+    profile["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    PROFILE_PATH.parent.mkdir(exist_ok=True)
+    PROFILE_PATH.write_text(json.dumps(profile, indent=2, ensure_ascii=False))
+    print(f"\nsaved → {PROFILE_PATH}\n")
+
+
+def cmd_profile(_args: argparse.Namespace) -> None:
+    if PROFILE_PATH.exists():
+        print("current profile:")
+        print(PROFILE_PATH.read_text())
+        if not sys.stdin.isatty():
+            return
+        if input("edit it? [y/N] ").strip().lower() != "y":
+            return
+    create_profile_interactive()
+
+
 def cmd_record(args: argparse.Namespace) -> None:
     if not CAPTURE_BIN.exists():
         die("capture binary not built — run ./setup.sh first")
+
+    if not PROFILE_PATH.exists() and sys.stdin.isatty():
+        if input("No profile yet — set one up for experience-calibrated feedback? [Y/n] ")\
+                .strip().lower() not in ("n", "no"):
+            create_profile_interactive()
 
     print(CONSENT_NOTICE)
     session_dir = SESSIONS_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -152,6 +192,9 @@ def main() -> None:
 
     history = subparsers.add_parser("history", help="list past sessions and recurring weak concepts")
     history.set_defaults(func=cmd_history)
+
+    profile = subparsers.add_parser("profile", help="view or edit your candidate profile")
+    profile.set_defaults(func=cmd_profile)
 
     args = parser.parse_args()
     args.func(args)
