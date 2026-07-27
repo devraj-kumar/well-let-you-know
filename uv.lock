@@ -582,27 +582,6 @@ wheels = [
 ]
 
 [[package]]
-name = "interview-coach"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "anthropic" },
-    { name = "jsonschema" },
-    { name = "mlx-whisper" },
-    { name = "resemblyzer" },
-    { name = "setuptools" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", specifier = ">=0.60" },
-    { name = "jsonschema", specifier = ">=4.0" },
-    { name = "mlx-whisper", specifier = ">=0.4.0" },
-    { name = "resemblyzer", specifier = ">=0.1.4" },
-    { name = "setuptools", specifier = "<81" },
-]
-
-[[package]]
 name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
@@ -2706,3 +2685,24 @@ name = "webrtcvad"
 version = "2.0.10"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/89/34/e2de2d97f3288512b9ea56f92e7452f8207eb5a0096500badf9dfd48f5e6/webrtcvad-2.0.10.tar.gz", hash = "sha256:f1bed2fb25b63fb7b1a55d64090c993c9c9167b28485ae0bcdd81cf6ede96aea", size = 66156, upload-time = "2017-01-07T23:05:18.732Z" }
+
+[[package]]
+name = "well-let-you-know"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "anthropic" },
+    { name = "jsonschema" },
+    { name = "mlx-whisper" },
+    { name = "resemblyzer" },
+    { name = "setuptools" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", specifier = ">=0.60" },
+    { name = "jsonschema", specifier = ">=4.0" },
+    { name = "mlx-whisper", specifier = ">=0.4.0" },
+    { name = "resemblyzer", specifier = ">=0.1.4" },
+    { name = "setuptools", specifier = "<81" },
+]

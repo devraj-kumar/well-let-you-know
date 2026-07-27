@@ -1,9 +1,10 @@
-# interview-coach
+# well-let-you-know
 
-**Find out exactly why your technical interviews aren't converting.**
+> *"Thanks for your time — we'll let you know."*
+> They never do. **This does.**
 
-interview-coach records your interview on your Mac, transcribes it privately
-on-device, and gives you an honest report afterwards:
+well-let-you-know records your interview on your Mac, transcribes it privately
+on-device, and gives you the honest report the company never sends:
 
 - every question asked, and whether your answer was **strong / partial / missed —
   judged for YOUR experience level** (an answer that's fine at 2 years is a red
@@ -42,7 +43,7 @@ Built for people restarting interviews after a layoff who keep hearing
 **Step 2 — Copy-paste this and press Enter:**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/interview-coach.git && cd interview-coach && ./setup.sh
+git clone https://github.com/YOUR_USERNAME/well-let-you-know.git && cd well-let-you-know && ./setup.sh
 ```
 
 The setup script checks your Mac and **installs everything for you** — it will
@@ -66,19 +67,19 @@ That's it. You never need to touch setup again.
 ## Tell it who you are (once)
 
 ```bash
-./coach profile
+./wlyk profile
 ```
 
 One minute of questions — your experience, current role, stack, and the role
 you're targeting. Every report is then calibrated to that persona instead of a
-generic bar. `./coach record` offers this automatically the first time.
+generic bar. `./wlyk record` offers this automatically the first time.
 
 ## Using it on interview day
 
-**Before the interview starts** (Terminal, inside the `interview-coach` folder):
+**Before the interview starts** (Terminal, inside the `well-let-you-know` folder):
 
 ```bash
-./coach record
+./wlyk record
 ```
 
 Minimize the window and take your interview normally — on Zoom, Meet, Teams,
@@ -95,8 +96,8 @@ deliberately thorough, not fast). The report opens in your browser by itself.
 ### Other commands
 
 ```bash
-./coach history                    # all past interviews + concepts that keep hurting you
-./coach process <session-name>     # rebuild a report for an old recording
+./wlyk history                    # all past interviews + concepts that keep hurting you
+./wlyk process <session-name>     # rebuild a report for an old recording
 ```
 
 ## Your privacy
@@ -113,10 +114,10 @@ deliberately thorough, not fast). The report opens in your browser by itself.
 | Problem | Fix |
 |---|---|
 | Report says the interviewer said nothing / `system.wav` is silent | The System Audio Recording permission is off. System Settings → Privacy & Security → Screen & System Audio Recording → turn ON Terminal → run `./setup.sh` again to re-test. |
-| `claude: command not found` during analysis | Install Claude Code: `curl -fsSL https://claude.ai/install.sh \| bash`, then run `claude` once to log in. Then `./coach process <session>` to finish your report — the recording is safe. |
+| `claude: command not found` during analysis | Install Claude Code: `curl -fsSL https://claude.ai/install.sh \| bash`, then run `claude` once to log in. Then `./wlyk process <session>` to finish your report — the recording is safe. |
 | First report is very slow | The first run downloads a 3 GB transcription model. Every run after that skips the download. |
 | Two interviewers on the call | Detected automatically by voice (INTERVIEWER_A / INTERVIEWER_B) and named from their introductions. If their voices are too similar to separate reliably, they're kept as one INTERVIEWER rather than guessed. |
-| It didn't record my headphones call | It records *system audio*, which includes calls on any headphones. If you use exotic audio routing (external DACs, virtual devices), do a 30-second test first: `./coach record --duration 30 --no-open` |
+| It didn't record my headphones call | It records *system audio*, which includes calls on any headphones. If you use exotic audio routing (external DACs, virtual devices), do a 30-second test first: `./wlyk record --duration 30 --no-open` |
 
 ---
 

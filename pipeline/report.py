@@ -166,7 +166,7 @@ def render_report(session_dir: Path) -> Path:
                 f"{esc(communication.get('responsiveness_notes'))}</div>")
     body.append("</div>")
 
-    body.append("<footer>Recorded and analyzed locally by interview-coach. "
+    body.append("<footer>Recorded and analyzed locally by well-let-you-know. "
                 "Transcript and audio never left this Mac; analysis text was sent to Claude.</footer>")
     body.append("</main>")
 

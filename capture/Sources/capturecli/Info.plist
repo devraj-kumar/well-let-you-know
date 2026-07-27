@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>dev.interviewcoach.capturecli</string>
+	<string>dev.wellletyouknow.capturecli</string>
 	<key>CFBundleName</key>
 	<string>capturecli</string>
 	<key>CFBundleShortVersionString</key>

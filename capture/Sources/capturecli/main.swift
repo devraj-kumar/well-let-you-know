@@ -64,7 +64,7 @@ final class SystemAudioRecorder {
         // Global tap: everything the system plays, excluding no processes.
         let tapDescription = CATapDescription(stereoGlobalTapButExcludeProcesses: [])
         tapDescription.uuid = UUID()
-        tapDescription.name = "interview-coach-system-tap"
+        tapDescription.name = "wlyk-system-tap"
         tapDescription.isPrivate = true
         tapDescription.muteBehavior = .unmuted
 
@@ -91,7 +91,7 @@ final class SystemAudioRecorder {
         }
 
         let description: [String: Any] = [
-            kAudioAggregateDeviceNameKey as String: "interview-coach-aggregate",
+            kAudioAggregateDeviceNameKey as String: "wlyk-aggregate",
             kAudioAggregateDeviceUIDKey as String: UUID().uuidString,
             kAudioAggregateDeviceIsPrivateKey as String: true,
             kAudioAggregateDeviceTapAutoStartKey as String: true,

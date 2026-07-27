@@ -1,4 +1,6 @@
-"""interview-coach CLI.
+"""well-let-you-know CLI.
+
+They said they'd let you know. They didn't. This does.
 
 Commands:
   record   - record an interview (Ctrl-C to stop), then transcribe + analyze + report
@@ -43,7 +45,7 @@ def die(message: str) -> None:
 def create_profile_interactive() -> None:
     print("\nYour profile calibrates the feedback — an answer that's fine at 2 years of")
     print("experience can be a red flag at 5. Takes one minute; edit any time with")
-    print("'./coach profile'. Press Enter to skip a question.\n")
+    print("'./wlyk profile'. Press Enter to skip a question.\n")
     questions = [
         ("name", "Your name"),
         ("years_experience", "Total years of professional experience (number)"),
@@ -147,7 +149,7 @@ def process_session(session_dir: Path, open_report: bool = True, force: bool = F
 def cmd_history(_args: argparse.Namespace) -> None:
     sessions = sorted(SESSIONS_DIR.glob("*/analysis.json"))
     if not sessions:
-        print("no analyzed sessions yet — run ./coach record")
+        print("no analyzed sessions yet — run ./wlyk record")
         return
 
     weak_counts: dict[str, int] = {}
@@ -176,7 +178,7 @@ def cmd_history(_args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="coach", description=__doc__)
+    parser = argparse.ArgumentParser(prog="wlyk", description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     record = subparsers.add_parser("record", help="record an interview, then build the report")

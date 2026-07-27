@@ -1,5 +1,5 @@
 [project]
-name = "interview-coach"
+name = "well-let-you-know"
 version = "0.1.0"
 description = "Post-interview gap analysis: record locally, transcribe on-device, get a Claude-powered report"
 requires-python = ">=3.10"

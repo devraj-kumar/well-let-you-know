@@ -1,5 +1,5 @@
 #!/bin/bash
-# interview-coach guided setup. Safe to run as many times as you like.
+# well-let-you-know guided setup. Safe to run as many times as you like.
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -14,7 +14,7 @@ ask() {  # ask "question" -> returns 0 for yes. Defaults to yes; skips when non-
   [[ ! "$reply" =~ ^[Nn] ]]
 }
 
-echo "interview-coach setup — this checks your Mac and installs what's missing."
+echo "well-let-you-know setup — this checks your Mac and installs what's missing."
 
 step "Checking your Mac"
 [[ "$(uname -m)" == "arm64" ]] || die "This tool needs an Apple Silicon Mac (M1 or newer)."
@@ -62,7 +62,7 @@ done
 
 step "Building the audio recorder"
 swift build -c release --package-path "$DIR/capture" >/dev/null
-chmod +x "$DIR/coach"
+chmod +x "$DIR/wlyk"
 ok "recorder built"
 
 step "Setting up Python"
@@ -116,9 +116,9 @@ if ask "Run a 6-second test recording now to set them up? (play any song/video f
     open "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture" 2>/dev/null || true
   fi
 else
-  note "Skipped — you'll get the permission popups on your first ./coach record."
+  note "Skipped — you'll get the permission popups on your first ./wlyk record."
 fi
 
 printf "\n\033[1mAll set. Before your next interview run:\033[0m\n"
-echo "  ./coach record"
+echo "  ./wlyk record"
 echo "and press Ctrl-C when the interview ends. Your report opens by itself."
