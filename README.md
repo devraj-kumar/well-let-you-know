@@ -43,7 +43,7 @@ Built for people restarting interviews after a layoff who keep hearing
 **Step 2 — Copy-paste this and press Enter:**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/well-let-you-know.git && cd well-let-you-know && ./setup.sh
+git clone https://github.com/devraj-kumar/well-let-you-know.git && cd well-let-you-know && ./setup.sh
 ```
 
 The setup script checks your Mac and **installs everything for you** — it will
