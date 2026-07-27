@@ -1,5 +1,16 @@
 #!/bin/bash
-# interview-coach entry point. Requires uv (https://docs.astral.sh/uv/).
+# interview-coach entry point.
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Homebrew tools may not be on PATH in fresh terminals.
+if ! command -v uv >/dev/null 2>&1 && [ -x /opt/homebrew/bin/uv ]; then
+  export PATH="/opt/homebrew/bin:$PATH"
+fi
+if ! command -v uv >/dev/null 2>&1; then
+  echo "interview-coach isn't set up yet — run this first:" >&2
+  echo "  ./setup.sh" >&2
+  exit 1
+fi
+
 exec uv run --project "$DIR" python "$DIR/pipeline/coach.py" "$@"

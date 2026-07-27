@@ -1,122 +1,152 @@
 # interview-coach
 
-Record your technical interview locally on your Mac, transcribe it **on-device**, and
-get an honest post-interview gap report: every question asked, how you answered,
-which hints the interviewer gave that you missed, where you deflected, which
-concepts were weak, and exactly what to study before the next one.
+**Find out exactly why your technical interviews aren't converting.**
 
-Built for people re-entering interviews after a layoff who keep hearing "we went
-with another candidate" without knowing why.
+interview-coach records your interview on your Mac, transcribes it privately
+on-device, and gives you an honest report afterwards:
 
-**This is a self-improvement tool, not a cheating tool.** It gives no live help
-during the interview — it only analyzes afterward.
+- every question asked, and whether your answer was **strong / partial / missed**
+- the **hints the interviewer gave you** — and which ones you didn't pick up
+- the moments you **deflected** instead of answering (with your exact words)
+- the **concepts that are actually weak**, ranked, with what to study
+- your talk-time ratio, response delays, and the **top 3 things to fix** next time
 
-## How it works
+It works in **English, Hindi, and Hinglish**. It gives **no help during the
+interview** — this is a mirror, not a cheat tool. Your audio never leaves your Mac.
 
-```
-mic ────────────► mic.wav      (you = CANDIDATE)          ─┐
-                                                            ├─► mlx-whisper (on-device)
-system audio ───► system.wav   (Zoom/Meet = INTERVIEWER)  ─┘        │
-                                                            merged transcript
-                                                                    │
-                                                            Claude gap analysis
-                                                                    │
-                                                            report.html (local)
-```
+Built for people restarting interviews after a layoff who keep hearing
+*"we went with another candidate"* without ever learning why.
 
-Capturing the two sides as **separate audio channels** gives perfect speaker
-attribution with zero ML diarization. Audio and transcripts never leave your Mac;
-only the transcript text is sent to Claude for the analysis step.
+---
 
-## Requirements
+## What you need
 
-- Apple Silicon Mac, macOS 14.4+
-- Xcode Command Line Tools (`xcode-select --install`)
-- [uv](https://docs.astral.sh/uv/) and ffmpeg (`brew install uv ffmpeg`)
-- Claude Code installed (`claude` on PATH) **or** `ANTHROPIC_API_KEY` set
+- A Mac with an Apple chip (M1/M2/M3/M4/M5 — every Mac from 2021 onwards)
+- macOS 14.4 or newer
+- about 5 GB of free disk space
+- a [Claude](https://claude.com/claude-code) login (used to write the report —
+  setup will guide you)
 
-## Setup
+## Install (10 minutes, one-time)
+
+**Step 1 — Open Terminal.** Press `Cmd + Space`, type `Terminal`, press Enter.
+
+**Step 2 — Copy-paste this and press Enter:**
 
 ```bash
-git clone <this-repo> && cd interview-coach
-./setup.sh
+git clone https://github.com/YOUR_USERNAME/interview-coach.git && cd interview-coach && ./setup.sh
 ```
 
-## Usage
+The setup script checks your Mac and **installs everything for you** — it will
+ask before installing anything. Just answer the questions.
+
+> If it says *"command line developer tools"* need installing, click **Install**
+> in the popup, wait for it to finish, then run `./setup.sh` again.
+
+**Step 3 — Allow the two permissions.** At the end, setup runs a 6-second test
+recording. macOS will show two popups — click **Allow** on both:
+
+1. **Microphone** (records your voice)
+2. **System Audio Recording** (records the interviewer's voice from Zoom/Meet/Teams)
+
+Missed a popup or clicked Don't Allow? Open **System Settings → Privacy &
+Security → Screen & System Audio Recording**, switch **Terminal** ON, and run
+`./setup.sh` again. Setup tells you if everything worked.
+
+That's it. You never need to touch setup again.
+
+## Using it on interview day
+
+**Before the interview starts** (Terminal, inside the `interview-coach` folder):
 
 ```bash
-./coach record          # start before the interview; Ctrl-C when it ends
+./coach record
 ```
 
-After you stop, it transcribes (first run downloads the Whisper model, ~3 GB),
-runs the Claude analysis, and opens `report.html`.
+Minimize the window and take your interview normally — on Zoom, Meet, Teams,
+anything. Use headphones or speakers, either works.
 
-**The pipeline is tuned for accuracy, not speed.** It uses the full Whisper
-large-v3 model and a two-pass Claude analysis (deep analysis on Opus, then a
-verification pass that audits every quote, verdict, and question against the
-transcript). Expect the report ~5–15 minutes after a one-hour interview — by
-design: the report drives real preparation decisions, so precision wins.
-Talk ratio and response-latency numbers are measured from the audio timings,
-not estimated by the model.
+**When the interview ends**, click the Terminal window and press `Ctrl + C`.
+
+Then go get a coffee ☕ — the tool transcribes everything on your Mac and writes
+your report. For a one-hour interview this takes roughly 15–25 minutes (it is
+deliberately thorough, not fast). The report opens in your browser by itself.
+
+### Other commands
 
 ```bash
-./coach process <session> [--force]   # re-run the pipeline on a past session
-./coach history                        # sessions overview + recurring weak concepts
+./coach history                    # all past interviews + concepts that keep hurting you
+./coach process <session-name>     # rebuild a report for an old recording
 ```
 
-### First-run permissions
+## Your privacy
 
-macOS will prompt twice, for your **terminal app**:
+- Audio and transcripts stay in the `sessions/` folder on your Mac. Nothing is uploaded.
+- Only the transcript **text** is sent to Claude to write the analysis, after the
+  interview is over.
+- ⚠️ **Recording laws differ by country/state, and some companies don't allow
+  recording interviews. You are responsible for making sure it's okay to record.**
+  The tool reminds you every time you start.
 
-1. **Microphone**
-2. **System Audio Recording** (System Settings → Privacy & Security → Screen & System Audio Recording)
+## Common problems
 
-Grant both, then re-run `./coach record`. Do a 30-second test before a real
-interview: `./coach record --duration 30 --no-open` while playing any video.
+| Problem | Fix |
+|---|---|
+| Report says the interviewer said nothing / `system.wav` is silent | The System Audio Recording permission is off. System Settings → Privacy & Security → Screen & System Audio Recording → turn ON Terminal → run `./setup.sh` again to re-test. |
+| `claude: command not found` during analysis | Install Claude Code: `curl -fsSL https://claude.ai/install.sh \| bash`, then run `claude` once to log in. Then `./coach process <session>` to finish your report — the recording is safe. |
+| First report is very slow | The first run downloads a 3 GB transcription model. Every run after that skips the download. |
+| Two interviewers on the call | Both appear as one "INTERVIEWER" voice. The analysis still works. |
+| It didn't record my headphones call | It records *system audio*, which includes calls on any headphones. If you use exotic audio routing (external DACs, virtual devices), do a 30-second test first: `./coach record --duration 30 --no-open` |
 
-### Languages: English, Hindi, Hinglish
+---
 
-The pipeline handles English, Hindi, and code-switched Hinglish out of the box —
-language is auto-detected per speaker channel, and Whisper may write Hindi speech
-in Devanagari or romanized form (both are fine). The gap report is written in the
-language the candidate mostly spoke: English for English interviews, easy Hinglish
-for Hindi/Hinglish ones — with technical terms kept in English and all quotes
-verbatim.
+## For the curious: how it works
 
-### Configuration (env vars)
+```
+your mic ───────────► mic.wav      (CANDIDATE)   ─┐
+                                                   ├─► Whisper large-v3 (on-device, per
+system audio ───────► system.wav   (INTERVIEWER) ─┘    speech-chunk for exact timestamps)
+                                                            │
+                                                   speaker-labeled transcript
+                                                            │
+                                        Claude Opus: deep analysis pass
+                                                            │
+                                        Claude Opus: verification pass
+                                        (audits every quote & verdict
+                                         against the transcript)
+                                                            │
+                                                      report.html
+```
+
+- Two separate audio channels = perfect speaker attribution, no ML diarization.
+- Talk ratio and response-latency numbers are **measured from the audio timings**,
+  not estimated by the model.
+- Language is auto-detected per speaker; the report is written in the language you
+  spoke (English → English, Hindi/Hinglish → easy Hinglish).
+
+### Tuning (optional environment variables)
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `COACH_WHISPER_MODEL` | `mlx-community/whisper-large-v3-mlx` | Any mlx-community Whisper repo (`whisper-large-v3-turbo` if you want speed, `whisper-tiny` for quick tests) |
+| `COACH_WHISPER_MODEL` | `mlx-community/whisper-large-v3-mlx` | `whisper-large-v3-turbo` for speed, `whisper-tiny` for quick tests |
 | `COACH_CLAUDE_MODEL` | `claude-opus-4-8` | Model for both analysis passes |
-| `COACH_LANGUAGE` | `auto` | Force the spoken language for transcription (`hi`, `en`, …) if auto-detect misfires |
-| `COACH_REPORT_LANGUAGE` | `auto` (follow the candidate) | Force the report narrative language, e.g. `English` to share a Hindi interview's report with an English-speaking mentor |
+| `COACH_LANGUAGE` | auto-detect | Force transcription language (`hi`, `en`, …) |
+| `COACH_REPORT_LANGUAGE` | follow the candidate | e.g. `English` to share a Hindi interview's report with an English-speaking mentor |
 
-## ⚠️ Consent and legality
-
-You are recording a conversation. Many jurisdictions (e.g. several US states)
-require **all parties' consent** to record, and some companies prohibit recording
-interviews regardless. **You are responsible for ensuring the recording is lawful
-and permitted.** The tool reminds you at every recording start, stores everything
-locally under `sessions/` (gitignored), and never uploads audio.
-
-## Troubleshooting
-
-- **system.wav is silent** — the System Audio Recording permission wasn't granted
-  to your terminal, or you're on macOS < 14.4. Fallback: install
-  [BlackHole](https://existential.audio/blackhole/) (`brew install blackhole-2ch`),
-  create a Multi-Output Device in Audio MIDI Setup, and record from it.
-- **Analysis fails** — make sure `claude` works in your terminal, or export
-  `ANTHROPIC_API_KEY`.
-- **Multiple interviewers** all appear as one `INTERVIEWER` speaker (they share the
-  system-audio channel). Known MVP limitation.
-
-## Session layout
+### Session folder layout
 
 ```
-sessions/20260727-141500/
-├── mic.wav, system.wav    # raw audio (local only)
-├── transcript.{json,txt}  # speaker-labeled transcript
-├── analysis.json          # structured gap analysis
-└── report.html            # open in any browser
+sessions/20260728-141500/
+├── mic.wav, system.wav      # raw audio (never leaves your Mac)
+├── transcript.{json,txt}    # speaker-labeled transcript
+├── analysis.json            # final verified analysis
+├── analysis.draft.json      # pre-verification draft (see what the audit changed)
+└── report.html              # your report — open in any browser
 ```
+
+### Fallback if system audio can't be captured
+
+On setups where the Core Audio tap doesn't work, install
+[BlackHole](https://existential.audio/blackhole/) (`brew install blackhole-2ch`),
+create a Multi-Output Device in Audio MIDI Setup, and select it as your output
+during the interview.
