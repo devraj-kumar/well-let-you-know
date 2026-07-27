@@ -8,8 +8,10 @@ Produces transcript.json and transcript.txt in the session directory.
 
 from __future__ import annotations
 
+import difflib
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -123,6 +125,42 @@ def transcribe_channel(wav_path: Path) -> list[dict]:
     return segments
 
 
+def _normalize(text: str) -> str:
+    return re.sub(r"[^a-z0-9ऀ-ॿ ]", "", text.lower()).strip()
+
+
+def suppress_crosstalk(segments: list[dict]) -> list[dict]:
+    """Drop mic-channel copies of interviewer speech (speaker bleed).
+
+    When the candidate listens on speakers, the mic also hears the interviewer, so
+    the CANDIDATE channel duplicates INTERVIEWER lines a beat later. The system
+    channel is digitally clean and therefore authoritative for interviewer speech:
+    any CANDIDATE segment whose text is mostly found in nearby INTERVIEWER text is
+    treated as bleed and removed.
+    """
+    interviewer = [s for s in segments if s["speaker"] == "INTERVIEWER"]
+    kept, dropped = [], 0
+    for segment in segments:
+        if segment["speaker"] == "CANDIDATE":
+            text = _normalize(segment["text"])
+            if len(text) >= 8:
+                window = " ".join(
+                    _normalize(other["text"])
+                    for other in interviewer
+                    if other["start"] < segment["end"] + 6 and other["end"] > segment["start"] - 6
+                )
+                if window:
+                    matcher = difflib.SequenceMatcher(None, text, window)
+                    matched = sum(block.size for block in matcher.get_matching_blocks())
+                    if matched / len(text) > 0.7:
+                        dropped += 1
+                        continue
+        kept.append(segment)
+    if dropped:
+        print(f"  removed {dropped} mic segments that were speaker bleed from the interviewer")
+    return kept
+
+
 def format_timestamp(seconds: float) -> str:
     seconds = max(0, int(seconds))
     return f"{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
@@ -144,6 +182,7 @@ def transcribe_session(session_dir: Path) -> Path:
             merged.append({"speaker": speaker, **segment})
 
     merged.sort(key=lambda s: s["start"])
+    merged = suppress_crosstalk(merged)
 
     transcript_json = session_dir / "transcript.json"
     transcript_json.write_text(json.dumps({"segments": merged}, indent=2, ensure_ascii=False))

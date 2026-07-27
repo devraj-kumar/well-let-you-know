@@ -16,6 +16,10 @@ the language it was given in. The transcriber sometimes writes Hindi speech in
 Devanagari and sometimes romanized; read both. Keep every quote verbatim in its
 original language and script.
 
+If the candidate used speakers, a few CANDIDATE lines may be leftover microphone
+echo of the interviewer (they repeat part of an adjacent INTERVIEWER line). Treat
+such duplicates as interviewer speech, never as the candidate speaking.
+
 Your job is to produce an honest, specific, evidence-backed gap analysis. The
 candidate may be re-entering interviews after a layoff — be direct but constructive.
 Never invent quotes: every quote you output must appear (possibly lightly cleaned up)

@@ -64,7 +64,9 @@ That's it. You never need to touch setup again.
 ```
 
 Minimize the window and take your interview normally — on Zoom, Meet, Teams,
-anything. Use headphones or speakers, either works.
+anything. **Headphones are recommended** (cleanest recording). Speakers also
+work — the tool detects and filters the echo of the interviewer that your mic
+picks up.
 
 **When the interview ends**, click the Terminal window and press `Ctrl + C`.
 

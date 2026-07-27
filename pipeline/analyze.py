@@ -215,8 +215,12 @@ def run_validated(prompt: str) -> dict:
         print(f"  output was malformed ({str(first_error)[:120]}); retrying once …")
         retry_prompt = (
             prompt
-            + "\n\nYour previous output was invalid JSON or did not match the required "
-            + f"schema ({first_error}). Return ONLY the corrected JSON object."
+            + "\n\n---\n\nYour previous attempt is included below. It was rejected "
+            + f"because: {str(first_error)[:400]}\n"
+            + "Repair it — keep the analysis content, fix the structure, and fill in "
+            + "any missing required fields from the transcript. "
+            + "Return ONLY the corrected JSON object.\n\nPREVIOUS ATTEMPT:\n"
+            + output[:80000]
         )
         data = extract_json(run_model(retry_prompt))
         validate(data, SCHEMA)
