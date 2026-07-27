@@ -34,7 +34,7 @@ Built for people restarting interviews after a layoff who keep hearing
 - macOS 14.4 or newer
 - about 5 GB of free disk space
 - a [Claude](https://claude.com/claude-code) login (used to write the report —
-  setup will guide you)
+  setup will guide you) // if you dont have email me at devrajkumar111@gmail.com I ll sort this for you
 
 ## Install (10 minutes, one-time)
 
