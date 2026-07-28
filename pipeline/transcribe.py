@@ -84,17 +84,79 @@ def speech_regions(wav_path: Path) -> list[tuple[float, float]]:
     return padded if padded else ([(0.0, duration)] if duration > 0.3 else [])
 
 
+# Canned phrases Whisper invents on silence/music (YouTube training artifacts).
+HALLUCINATED_PHRASES = {
+    "thank you for watching", "thanks for watching", "please subscribe",
+    "dont forget to subscribe", "see you in the next video", "open log",
+    "ご視聴ありがとうございました", "ありがとうございました", "チャンネル登録をお願いします",
+    # Whisper's favorite silence-fillers. A genuine bare "thank you" segment
+    # carries no analytical value, so dropping these is free.
+    "thank you", "thank you very much", "thank you so much", "thanks",
+}
+
+
+def is_hallucination(segment: dict) -> bool:
+    text = segment.get("text", "").strip()
+    if not text:
+        return True
+    # Repetition loops ("Bird Bird Bird …") have extreme compression ratios.
+    if segment.get("compression_ratio", 0.0) > 2.4:
+        return True
+    words = _normalize(text).split()
+    if len(words) >= 6 and len(set(words)) <= 2:
+        return True
+    if segment.get("no_speech_prob", 0.0) > 0.75:
+        return True
+    if segment.get("no_speech_prob", 0.0) > 0.6 and segment.get("avg_logprob", 0.0) < -1.0:
+        return True
+    if _normalize(text) in {_normalize(p) for p in HALLUCINATED_PHRASES}:
+        return True
+    return False
+
+
+def detect_language(wav_path: Path, regions: list[tuple[float, float]]) -> str | None:
+    """Pin one language per channel: per-chunk auto-detect flip-flops between
+    scripts (Hindi speech can come out as Urdu script or even Japanese)."""
+    import mlx_whisper
+
+    if not regions:
+        return None
+    start, end = max(regions, key=lambda r: r[1] - r[0])
+    with tempfile.TemporaryDirectory() as tmp:
+        clip = Path(tmp) / "detect.wav"
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "quiet", "-i", str(wav_path),
+             "-ss", f"{start:.3f}", "-to", f"{min(end, start + 30):.3f}",
+             "-c:a", "pcm_f32le", str(clip)],
+            check=True,
+        )
+        result = mlx_whisper.transcribe(
+            str(clip), path_or_hf_repo=whisper_model(),
+            initial_prompt=INITIAL_PROMPT, condition_on_previous_text=False,
+        )
+    language = result.get("language")
+    # Spoken Hindi is regularly mis-detected as Urdu (same language, different
+    # script) — prefer Devanagari, which is what our users read.
+    return "hi" if language == "ur" else language
+
+
 def transcribe_channel(wav_path: Path) -> list[dict]:
     import mlx_whisper  # heavy import; keep it lazy
 
-    # COACH_LANGUAGE: unset/auto = per-channel auto-detect (right default for
-    # Hinglish and mixed panels); or a Whisper code like "hi" / "en" to force one.
+    regions = speech_regions(wav_path)
+
+    # COACH_LANGUAGE: unset/auto = detect once per channel (stable script for
+    # Hinglish); or a Whisper code like "hi" / "en" to force one.
     language = os.environ.get("COACH_LANGUAGE", "auto").lower()
-    kwargs = {} if language in ("", "auto") else {"language": language}
+    if language in ("", "auto"):
+        language = detect_language(wav_path, regions)
+        if language:
+            print(f"  detected language for {wav_path.name}: {language}")
+    kwargs = {"language": language} if language else {}
 
     segments = []
     with tempfile.TemporaryDirectory() as tmp:
-        for i, (region_start, region_end) in enumerate(speech_regions(wav_path)):
+        for i, (region_start, region_end) in enumerate(regions):
             clip = Path(tmp) / f"clip{i}.wav"
             subprocess.run(
                 ["ffmpeg", "-y", "-v", "quiet", "-i", str(wav_path),
@@ -110,17 +172,12 @@ def transcribe_channel(wav_path: Path) -> list[dict]:
                 **kwargs,
             )
             for segment in result.get("segments", []):
-                text = segment.get("text", "").strip()
-                if not text:
-                    continue
-                # Drop likely silence hallucinations.
-                if (segment.get("no_speech_prob", 0.0) > 0.6
-                        and segment.get("avg_logprob", 0.0) < -1.0):
+                if is_hallucination(segment):
                     continue
                 segments.append({
                     "start": region_start + float(segment["start"]),
                     "end": region_start + float(segment["end"]),
-                    "text": text,
+                    "text": segment["text"].strip(),
                 })
     return segments
 
